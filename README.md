@@ -1,3 +1,7 @@
+# Experimental V2 combined fix
+
+This build combines PR #5 body-layout conversion with preservation of the original Switch template header for PC→Switch conversion. Always back up original saves.
+
 WIP
 # DSTS Save Converter
 
@@ -54,3 +58,7 @@ To build the standalone executables for Windows and Linux:
    ```
 
 The compiled executables will be generated in the `dist` folder.
+
+
+## V3 change
+PC -> Switch now preserves the Switch-compatible header while copying the original PC playtime field into it. This prevents a fresh Switch template (for example 01:xx) from replacing the PC save's accumulated playtime on the load screen.

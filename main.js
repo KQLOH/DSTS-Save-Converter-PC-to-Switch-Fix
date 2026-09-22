@@ -1,11 +1,9 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const crypto = require('crypto');
-const lz4 = require('lz4');
 const AdmZip = require('adm-zip');
 
-const DSTS_KEY = Buffer.from('33393632373736373534353535383833', 'hex'); // 3962776754555883
+const saveFormat = require('./lib/save-format');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -87,54 +85,31 @@ ipcMain.handle('convert', async (event, args) => {
       zipEntries = zip.getEntries();
     }
 
+    const putInZip = (file, data) => {
+      const entry = zipEntries.find(e => e.entryName.endsWith(`/${file}`) || e.entryName === file);
+      if (entry) zip.updateFile(entry.entryName, data);
+      else zip.addFile(`savedata/${file}`, data);
+    };
+
     // Process all main save files
     for (const file of mainFiles) {
-      const inputPath = path.join(inputFolder, file);
-      const outputPath = path.join(outputFolder, file);
-      const inputMain = fs.readFileSync(inputPath);
-      let outputMain;
-
-      if (direction === 'switch-to-pc') {
-        const header = inputMain.subarray(0, 1024);
-        const compressedPayload = inputMain.subarray(1024);
-        
-        const uncompressedPayload = Buffer.alloc(3097152);
-        const decodedSize = lz4.decodeBlock(compressedPayload, uncompressedPayload);
-        
-        if (decodedSize !== 3097152) {
-            console.warn(`${file} - Uncompressed payload size mismatch: ${decodedSize}`);
+      const inputMain = fs.readFileSync(path.join(inputFolder, file));
+      try {
+        if (direction === 'switch-to-pc') {
+          const outputMain = saveFormat.switchToPc(inputMain);
+          fs.writeFileSync(path.join(outputFolder, file), outputMain);
+        } else if (direction === 'pc-to-switch') {
+          const entry = zipEntries.find(e => e.entryName.endsWith(`/${file}`) || e.entryName === file);
+          const switchTemplateFile = entry ? zip.readFile(entry) : null;
+          if (!switchTemplateFile) {
+            console.warn(`${file}: no matching Switch template file found; falling back to PC header`);
+          } else {
+            console.log(`${file}: preserving 1024-byte header from Switch template`);
+          }
+          putInZip(file, saveFormat.pcToSwitch(inputMain, switchTemplateFile));
         }
-        
-        const unencryptedPc = Buffer.concat([header, uncompressedPayload]);
-        
-        const cipher = crypto.createCipheriv('aes-128-ecb', DSTS_KEY, '');
-        cipher.setAutoPadding(false);
-        outputMain = Buffer.concat([cipher.update(unencryptedPc), cipher.final()]);
-        
-        fs.writeFileSync(outputPath, outputMain);
-        
-      } else if (direction === 'pc-to-switch') {
-        const decipher = crypto.createDecipheriv('aes-128-ecb', DSTS_KEY, '');
-        decipher.setAutoPadding(false);
-        const decryptedPc = Buffer.concat([decipher.update(inputMain), decipher.final()]);
-        
-        const entryPath = zipEntries.find(e => e.entryName.endsWith(`/${file}`) || e.entryName === file);
-        const header = decryptedPc.subarray(0, 1024);
-        
-        const uncompressedPayload = decryptedPc.subarray(1024);
-        
-        const bound = lz4.encodeBound(uncompressedPayload.length);
-        const compressedBuffer = Buffer.alloc(bound);
-        const compressedSize = lz4.encodeBlockHC(uncompressedPayload, compressedBuffer);
-        const compressedPayload = compressedBuffer.subarray(0, compressedSize);
-        
-        outputMain = Buffer.concat([header, compressedPayload]);
-        
-        if (entryPath) {
-           zip.updateFile(entryPath.entryName, outputMain);
-        } else {
-           zip.addFile(`savedata/${file}`, outputMain);
-        }
+      } catch (err) {
+        throw new Error(`${file}: ${err.message}`);
       }
       processedCount++;
     }
@@ -144,13 +119,7 @@ ipcMain.handle('convert', async (event, args) => {
       if (direction === 'switch-to-pc') {
         fs.copyFileSync(path.join(inputFolder, file), path.join(outputFolder, file));
       } else if (direction === 'pc-to-switch') {
-        const fileData = fs.readFileSync(path.join(inputFolder, file));
-        const entryPath = zipEntries.find(e => e.entryName.endsWith(`/${file}`) || e.entryName === file);
-        if (entryPath) {
-           zip.updateFile(entryPath.entryName, fileData);
-        } else {
-           zip.addFile(`savedata/${file}`, fileData);
-        }
+        putInZip(file, fs.readFileSync(path.join(inputFolder, file)));
       }
       processedCount++;
     }
