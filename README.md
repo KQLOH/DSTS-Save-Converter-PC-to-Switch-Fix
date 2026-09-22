@@ -1,64 +1,94 @@
-# Experimental V2 combined fix
+# DSTS Save Converter - PC ↔ Switch Fix
 
-This build combines PR #5 body-layout conversion with preservation of the original Switch template header for PC→Switch conversion. Always back up original saves.
+Experimental fork of the original  
+**TyohDev/Digimon-Story-Time-Stranger-Save-Converter**
 
-WIP
-# DSTS Save Converter
+This project converts save files for **Digimon Story: Time Stranger** between the PC and Nintendo Switch versions.
 
-> **Note**: This is a "vibe coded" project, created dynamically through an AI pair programming session.
+> ⚠️ **Experimental**
+>
+> PC → Switch conversion has been successfully tested on a real save, including character loading and movement.
+>
+> However, save compatibility may still vary depending on game version, DLC, save state, and platform differences.
+>
+> **Always back up your original PC and Switch saves before using this tool.**
 
-This application allows you to convert save files for Digimon Story Time Stranger between the PC and Nintendo Switch versions.
+---
 
-**⚠️ IMPORTANT WARNING ⚠️**  
-PC to Switch save conversion is **untested** because not all DLC has been released for the Switch version of the game yet. Please proceed with caution and always back up your original saves!
+## What This Fork Fixes
+
+This fork focuses mainly on improving **PC → Switch** conversion.
+
+### Included fixes
+
+- Fixes invisible / missing player character after conversion
+- Fixes player being unable to move after loading
+- Handles the known PC/Switch save structure offset difference
+- Resets incompatible character model / appearance data where needed
+- Preserves the original Switch-compatible save header
+- Preserves the original PC playtime instead of replacing it with the playtime from the Switch template
+- Uses an existing Switch JKSV backup as the template for PC → Switch conversion
+
+---
+
+## Current Status
+
+### Switch → PC
+
+Expected to work similarly to the original project.
+
+### PC → Switch
+
+Tested successfully with:
+
+- Save loads correctly
+- Character is visible
+- Character can move normally
+- Original PC progress is retained
+- PC playtime preservation has been tested successfully on the author's converted save
+
+More testing is still needed with different saves, game versions, DLC combinations, and story states.
+
+---
 
 ## How to Use
 
-1. Launch the application (either run the executable or run from source).
-2. Use the UI to select your conversion direction:
-   - **Switch to PC**: Convert a Nintendo Switch JKSV backup folder into PC save files.
-   - **PC to Switch**: Convert PC save files into a Nintendo Switch JKSV backup ZIP file.
-3. Provide the necessary files/folders:
-   - **Input Folder**: Select the folder containing your original save files.
-   - **Output Folder**: Select the folder where you want the converted saves to be placed.
-   - **Original Switch Backup ZIP** (Only for PC to Switch): Select your original, unmodified Switch backup ZIP. This is required as a template to pack the converted saves into.
-4. Click **Convert** and wait for the process to finish. The app will notify you when conversion is successful and where to find your files.
+### PC → Switch
 
-## Build from Source
+1. Create a normal save on your Nintendo Switch.
+2. Export that save using **JKSV**.
+3. Keep an untouched backup of both your PC and Switch saves.
+4. Launch this converter.
+5. Select:
 
-If you want to run or build the application from source, you will need to have [Node.js](https://nodejs.org/) installed.
+   - **Direction:** PC → Switch
+   - **Input Folder:** your original PC save folder
+   - **Output Folder:** where you want the converted files
+   - **Original Switch Backup ZIP:** your original JKSV Switch backup
 
-### Setup
-1. Clone or download this directory.
-2. Open a terminal in the project directory.
-3. Install the dependencies by running:
-   ```bash
-   npm install
-   ```
+6. Click **Convert**.
+7. Copy the converted save into an existing JKSV-recognized backup if necessary.
+8. Restore the save using JKSV.
+9. Launch the game and test the save before saving over anything important.
 
-### Running Locally
-To start the app in development mode without building:
+---
+
+## Switch → PC
+
+1. Export your Switch save using JKSV.
+2. Select **Switch → PC** in the converter.
+3. Select the Switch save folder.
+4. Select an output folder.
+5. Click **Convert**.
+6. Copy the converted files into the appropriate PC save directory.
+
+---
+
+## Run From Source
+
+You need **Node.js** installed.
+
+Clone the repository:
+
 ```bash
-npm start
-```
-
-### Building Executables
-To build the standalone executables for Windows and Linux:
-1. Make sure you have installed the developer dependencies:
-   ```bash
-   npm install --save-dev electron-builder
-   ```
-2. Run the build command (if configured in package.json):
-   ```bash
-   npm run build
-   ```
-   Alternatively, run electron-builder directly:
-   ```bash
-   npx electron-builder --linux --win
-   ```
-
-The compiled executables will be generated in the `dist` folder.
-
-
-## V3 change
-PC -> Switch now preserves the Switch-compatible header while copying the original PC playtime field into it. This prevents a fresh Switch template (for example 01:xx) from replacing the PC save's accumulated playtime on the load screen.
+git clone https://github.com/KQLOH/DSTS-Save-Converter-PC-to-Switch-Fix.git
